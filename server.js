@@ -22,9 +22,8 @@ const corsOrigins = process.env.CORS_ORIGIN
   : [
       'http://localhost:3000', 
       'http://localhost:3001',
-      'https://cloths-frontend.vercel.app',
-      'https://rent-admin.vercel.app',
-      'https://rent-the-moment.vercel.app'
+      'https://saloni-cloths.vercel.app',
+      'https://rent-the-moment-admin.vercel.app'
     ];
 
 app.use(cors({
