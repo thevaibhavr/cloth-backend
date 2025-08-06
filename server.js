@@ -16,8 +16,19 @@ const userRoutes = require('./routes/users');
 
 // Middleware
 app.use(helmet());   
+// Parse CORS origins from environment variable
+const corsOrigins = process.env.CORS_ORIGIN 
+  ? process.env.CORS_ORIGIN.split(',')
+  : [
+      'http://localhost:3000', 
+      'http://localhost:3001',
+      'https://cloths-frontend.vercel.app',
+      'https://rent-admin.vercel.app',
+      'https://rent-the-moment.vercel.app'
+    ];
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || ['http://localhost:3000', 'http://localhost:3001'], 
+  origin: corsOrigins,
   credentials: true
 }));
  
