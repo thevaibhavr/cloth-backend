@@ -317,6 +317,22 @@ router.post('/', protect, admin, [
     });
   } catch (error) {
     console.error('Create product error:', error);
+    
+    // Handle duplicate key error specifically
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      if (field === 'slug') {
+        return res.status(400).json({
+          success: false,
+          message: 'A product with this name already exists. Please use a different name.'
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: `Duplicate ${field} value. Please use a different ${field}.`
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Server error while creating product'
@@ -398,6 +414,22 @@ router.put('/:id', protect, admin, [
     });
   } catch (error) {
     console.error('Update product error:', error);
+    
+    // Handle duplicate key error specifically
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      if (field === 'slug') {
+        return res.status(400).json({
+          success: false,
+          message: 'A product with this name already exists. Please use a different name.'
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: `Duplicate ${field} value. Please use a different ${field}.`
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Server error while updating product'

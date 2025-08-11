@@ -81,7 +81,9 @@ const productSchema = new mongoose.Schema({
   },
   slug: {
     type: String,
-    lowercase: true
+    lowercase: true,
+    unique: true,
+    sparse: true
   },
   views: {
     type: Number,
@@ -102,18 +104,40 @@ const productSchema = new mongoose.Schema({
 });
 
 // Generate slug from name before saving
-productSchema.pre('save', function(next) {
+productSchema.pre('save', async function(next) {
   if (!this.isModified('name')) return next();
   
-  this.slug = this.name
+  let baseSlug = this.name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
   
+  // Check if slug already exists
+  let slug = baseSlug;
+  let counter = 1;
+  
+  while (true) {
+    const existingProduct = await this.constructor.findOne({ 
+      slug: slug,
+      _id: { $ne: this._id } // Exclude current document if updating
+    });
+    
+    if (!existingProduct) {
+      break;
+    }
+    
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+  }
+  
+  this.slug = slug;
   next();
 });
 
 // Index for search functionality
 productSchema.index({ name: 'text', description: 'text', tags: 'text' });
+
+// Unique index for slug
+productSchema.index({ slug: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('Product', productSchema); 
