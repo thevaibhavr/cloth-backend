@@ -31,11 +31,22 @@ const productSchema = new mongoose.Schema({
     required: [true, 'Please provide the original price'],
     min: [0, 'Original price cannot be negative']
   },
-  size: {
-    type: String,
-    required: [true, 'Please provide a size'],
-    enum: ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size']
-  },
+  sizes: [{
+    size: {
+      type: String,
+      enum: ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'],
+      required: true
+    },
+    isAvailable: {
+      type: Boolean,
+      default: true
+    },
+    quantity: {
+      type: Number,
+      default: 1,
+      min: [0, 'Quantity cannot be negative']
+    }
+  }],
   color: {
     type: String,
     required: [true, 'Please provide a color'],

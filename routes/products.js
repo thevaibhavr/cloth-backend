@@ -44,7 +44,7 @@ router.get('/', optionalAuth, async (req, res) => {
     }
     
     if (size) {
-      filter.size = size;
+      filter['sizes.size'] = size;
     }
     
     if (color) {
@@ -227,7 +227,10 @@ router.post('/', protect, admin, [
   body('images').isArray({ min: 1 }).withMessage('At least one image is required'),
   body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
   body('originalPrice').isFloat({ min: 0 }).withMessage('Original price must be a positive number'),
-  body('size').isIn(['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size']).withMessage('Valid size is required'),
+  body('sizes').isArray({ min: 1 }).withMessage('At least one size is required'),
+  body('sizes.*.size').isIn(['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size']).withMessage('Valid size is required'),
+  body('sizes.*.isAvailable').isBoolean().withMessage('Size availability must be boolean'),
+  body('sizes.*.quantity').isInt({ min: 1 }).withMessage('Size quantity must be at least 1'),
   body('color').notEmpty().withMessage('Color is required'),
   body('rentalDuration').isInt({ min: 1 }).withMessage('Rental duration must be at least 1 day'),
   body('condition').optional().isIn(['Excellent', 'Very Good', 'Good', 'Fair']),
@@ -254,7 +257,7 @@ router.post('/', protect, admin, [
       images,
       price,
       originalPrice,
-      size,
+      sizes,
       color,
       rentalDuration,
       condition,
@@ -293,7 +296,7 @@ router.post('/', protect, admin, [
       images: uploadedImages,
       price,
       originalPrice,
-      size,
+      sizes,
       color,
       rentalDuration,
       condition: condition || 'Good',
@@ -350,7 +353,10 @@ router.put('/:id', protect, admin, [
   body('images').optional().isArray({ min: 1 }).withMessage('At least one image is required'),
   body('price').optional().isFloat({ min: 0 }).withMessage('Price must be a positive number'),
   body('originalPrice').optional().isFloat({ min: 0 }).withMessage('Original price must be a positive number'),
-  body('size').optional().isIn(['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size']).withMessage('Valid size is required'),
+  body('sizes').optional().isArray({ min: 1 }).withMessage('At least one size is required'),
+  body('sizes.*.size').optional().isIn(['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size']).withMessage('Valid size is required'),
+  body('sizes.*.isAvailable').optional().isBoolean().withMessage('Size availability must be boolean'),
+  body('sizes.*.quantity').optional().isInt({ min: 1 }).withMessage('Size quantity must be at least 1'),
   body('color').optional().notEmpty().withMessage('Color cannot be empty'),
   body('rentalDuration').optional().isInt({ min: 1 }).withMessage('Rental duration must be at least 1 day'),
   body('condition').optional().isIn(['Excellent', 'Very Good', 'Good', 'Fair']),
