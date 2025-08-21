@@ -12,7 +12,8 @@ const authRoutes = require('./routes/auth');
 const categoryRoutes = require('./routes/categories');
 const productRoutes = require('./routes/products'); 
 const orderRoutes = require('./routes/orders');
-const userRoutes = require('./routes/users');  
+const userRoutes = require('./routes/users');
+const uploadRoutes = require('./routes/upload');  
 
 // Middleware
 app.use(helmet());   
@@ -51,6 +52,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

@@ -30,7 +30,11 @@ router.get('/', optionalAuth, async (req, res) => {
     const filter = { isAvailable: true };
     
     if (category) {
-      filter.category = category;
+      // Support both single category and multiple categories
+      filter.$or = [
+        { category: category },
+        { categories: category }
+      ];
     }
     
     if (search) {
@@ -61,6 +65,7 @@ router.get('/', optionalAuth, async (req, res) => {
 
     const products = await Product.find(filter)
       .populate('category', 'name slug')
+      .populate('categories', 'name slug')
       .sort(sortOptions)
       .limit(limit * 1)
       .skip((page - 1) * limit)
@@ -105,7 +110,8 @@ router.get('/slug/:slug', optionalAuth, async (req, res) => {
     const product = await Product.findOne({ 
       slug: req.params.slug,
       isAvailable: true 
-    }).populate('category', 'name slug');
+    }).populate('category', 'name slug')
+     .populate('categories', 'name slug');
     
     if (!product) {
       return res.status(404).json({
@@ -144,17 +150,24 @@ router.get('/category/:categoryId', optionalAuth, async (req, res) => {
     sortOptions[sort] = order === 'desc' ? -1 : 1;
 
     const products = await Product.find({ 
-      category: req.params.categoryId,
+      $or: [
+        { category: req.params.categoryId },
+        { categories: req.params.categoryId }
+      ],
       isAvailable: true 
     })
       .populate('category', 'name slug')
+      .populate('categories', 'name slug')
       .sort(sortOptions)
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .exec();
 
     const total = await Product.countDocuments({ 
-      category: req.params.categoryId,
+      $or: [
+        { category: req.params.categoryId },
+        { categories: req.params.categoryId }
+      ],
       isAvailable: true 
     });
 
@@ -182,7 +195,8 @@ router.get('/category/:categoryId', optionalAuth, async (req, res) => {
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
-      .populate('category', 'name slug');
+      .populate('category', 'name slug')
+      .populate('categories', 'name slug');
     
     if (!product) {
       return res.status(404).json({
@@ -223,7 +237,8 @@ router.get('/:id', optionalAuth, async (req, res) => {
 router.post('/', protect, admin, [
   body('name').trim().isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters'),
   body('description').notEmpty().withMessage('Description is required'),
-  body('category').isMongoId().withMessage('Valid category ID is required'),
+  body('categories').isArray({ min: 1 }).withMessage('At least one category is required'),
+  body('categories.*').isMongoId().withMessage('Valid category ID is required'),
   body('images').isArray({ min: 1 }).withMessage('At least one image is required'),
   body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
   body('originalPrice').isFloat({ min: 0 }).withMessage('Original price must be a positive number'),
@@ -253,7 +268,7 @@ router.post('/', protect, admin, [
     const {
       name,
       description,
-      category,
+      categories,
       images,
       price,
       originalPrice,
@@ -269,13 +284,15 @@ router.post('/', protect, admin, [
       specifications
     } = req.body;
 
-    // Verify category exists
-    const categoryExists = await Category.findById(category);
-    if (!categoryExists) {
-      return res.status(400).json({
-        success: false,
-        message: 'Category not found'
-      });
+    // Verify all categories exist
+    for (const categoryId of categories) {
+      const categoryExists = await Category.findById(categoryId);
+      if (!categoryExists) {
+        return res.status(400).json({
+          success: false,
+          message: `Category with ID ${categoryId} not found`
+        });
+      }
     }
 
     // Upload images to Cloudinary
@@ -292,7 +309,7 @@ router.post('/', protect, admin, [
     const product = new Product({
       name,
       description,
-      category,
+      categories,
       images: uploadedImages,
       price,
       originalPrice,
@@ -311,7 +328,8 @@ router.post('/', protect, admin, [
     await product.save();
 
     const populatedProduct = await Product.findById(product._id)
-      .populate('category', 'name slug');
+      .populate('category', 'name slug')
+      .populate('categories', 'name slug');
 
     res.status(201).json({
       success: true,
@@ -349,7 +367,8 @@ router.post('/', protect, admin, [
 router.put('/:id', protect, admin, [
   body('name').optional().trim().isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters'),
   body('description').optional().notEmpty().withMessage('Description cannot be empty'),
-  body('category').optional().isMongoId().withMessage('Valid category ID is required'),
+  body('categories').optional().isArray({ min: 1 }).withMessage('At least one category is required'),
+  body('categories.*').optional().isMongoId().withMessage('Valid category ID is required'),
   body('images').optional().isArray({ min: 1 }).withMessage('At least one image is required'),
   body('price').optional().isFloat({ min: 0 }).withMessage('Price must be a positive number'),
   body('originalPrice').optional().isFloat({ min: 0 }).withMessage('Original price must be a positive number'),
@@ -381,14 +400,16 @@ router.put('/:id', protect, admin, [
       });
     }
 
-    // Verify category exists if being updated
-    if (req.body.category) {
-      const categoryExists = await Category.findById(req.body.category);
-      if (!categoryExists) {
-        return res.status(400).json({
-          success: false,
-          message: 'Category not found'
-        });
+    // Verify all categories exist if being updated
+    if (req.body.categories) {
+      for (const categoryId of req.body.categories) {
+        const categoryExists = await Category.findById(categoryId);
+        if (!categoryExists) {
+          return res.status(400).json({
+            success: false,
+            message: `Category with ID ${categoryId} not found`
+          });
+        }
       }
     }
 
@@ -411,7 +432,8 @@ router.put('/:id', protect, admin, [
       req.params.id,
       req.body,
       { new: true, runValidators: true }
-    ).populate('category', 'name slug');
+    ).populate('category', 'name slug')
+     .populate('categories', 'name slug');
 
     res.json({
       success: true,

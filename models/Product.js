@@ -12,10 +12,15 @@ const productSchema = new mongoose.Schema({
     required: [true, 'Please provide a product description'],
     trim: true
   },
-  category: {
+  categories: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category',
-    required: [true, 'Please provide a category']
+    required: [true, 'Please provide at least one category']
+  }],
+  // Keep category for backward compatibility (will be populated from first category in categories array)
+  category: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category'
   },
   images: [{
     type: String,
@@ -112,6 +117,14 @@ const productSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true
+});
+
+// Set category from first category in categories array for backward compatibility
+productSchema.pre('save', async function(next) {
+  if (this.categories && this.categories.length > 0) {
+    this.category = this.categories[0];
+  }
+  next();
 });
 
 // Generate slug from name before saving
