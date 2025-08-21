@@ -284,8 +284,19 @@ router.post('/', protect, admin, [
       specifications
     } = req.body;
 
+    // Filter out null/undefined values from categories array
+    const filteredCategories = categories.filter(categoryId => categoryId && categoryId !== null && categoryId !== undefined);
+    
+    // Ensure at least one category is provided
+    if (filteredCategories.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one category is required'
+      });
+    }
+    
     // Verify all categories exist
-    for (const categoryId of categories) {
+    for (const categoryId of filteredCategories) {
       const categoryExists = await Category.findById(categoryId);
       if (!categoryExists) {
         return res.status(400).json({
@@ -309,7 +320,7 @@ router.post('/', protect, admin, [
     const product = new Product({
       name,
       description,
-      categories,
+      categories: filteredCategories,
       images: uploadedImages,
       price,
       originalPrice,
@@ -402,6 +413,17 @@ router.put('/:id', protect, admin, [
 
     // Verify all categories exist if being updated
     if (req.body.categories) {
+      // Filter out null/undefined values from categories array
+      req.body.categories = req.body.categories.filter(categoryId => categoryId && categoryId !== null && categoryId !== undefined);
+      
+      // Ensure at least one category is provided
+      if (req.body.categories.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'At least one category is required'
+        });
+      }
+      
       for (const categoryId of req.body.categories) {
         const categoryExists = await Category.findById(categoryId);
         if (!categoryExists) {
