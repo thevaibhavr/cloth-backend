@@ -108,6 +108,10 @@ const orderSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
+  needDate: {
+    type: Date,
+    required: true
+  },
   notes: {
     type: String,
     trim: true

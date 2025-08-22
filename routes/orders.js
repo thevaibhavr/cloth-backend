@@ -24,6 +24,7 @@ router.post('/', protect, [
   body('paymentMethod').isIn(['Credit Card', 'Debit Card', 'PayPal', 'Cash on Delivery']).withMessage('Valid payment method is required'),
   body('rentalStartDate').isISO8601().withMessage('Valid rental start date is required'),
   body('rentalEndDate').isISO8601().withMessage('Valid rental end date is required'),
+  body('needDate').isISO8601().withMessage('Valid need date is required'),
   body('notes').optional().trim()
 ], async (req, res) => {
   try {
@@ -42,12 +43,14 @@ router.post('/', protect, [
       paymentMethod,
       rentalStartDate,
       rentalEndDate,
+      needDate,
       notes
     } = req.body;
 
     // Validate rental dates
     const startDate = new Date(rentalStartDate);
     const endDate = new Date(rentalEndDate);
+    const needDateObj = new Date(needDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -65,8 +68,15 @@ router.post('/', protect, [
       });
     }
 
-    // Calculate rental duration in days
-    const rentalDuration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+    if (needDateObj < today) {
+      return res.status(400).json({
+        success: false,
+        message: 'Need date cannot be in the past'
+      });
+    }
+
+    // Always 1 day rental duration
+    const rentalDuration = 1;
 
     // Validate and calculate order items
     const orderItems = [];
@@ -88,21 +98,14 @@ router.post('/', protect, [
         });
       }
 
-      // Validate rental duration matches product requirement
-      if (item.rentalDuration < product.rentalDuration) {
-        return res.status(400).json({
-          success: false,
-          message: `Minimum rental duration for ${product.name} is ${product.rentalDuration} days`
-        });
-      }
-
-      const itemTotal = product.price * item.quantity * item.rentalDuration;
+      // Always use 1 day rental duration
+      const itemTotal = product.price * item.quantity * 1;
       subtotal += itemTotal;
 
       orderItems.push({
         product: product._id,
         quantity: item.quantity,
-        rentalDuration: item.rentalDuration,
+        rentalDuration: 1, // Always 1 day
         price: product.price,
         totalPrice: itemTotal
       });
@@ -120,6 +123,7 @@ router.post('/', protect, [
       paymentMethod,
       rentalStartDate: startDate,
       rentalEndDate: endDate,
+      needDate: needDateObj,
       subtotal,
       shippingCost,
       tax,
