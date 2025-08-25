@@ -4,7 +4,11 @@ const orderSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'Please provide a user']
+    required: false // Optional for guest orders
+  },
+  isGuestOrder: {
+    type: Boolean,
+    default: false
   },
   items: [{
     product: {
