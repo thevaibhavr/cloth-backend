@@ -17,6 +17,10 @@ const productSchema = new mongoose.Schema({
     ref: 'Category',
     required: [true, 'Please provide at least one category']
   }],
+  Owner:{
+    type : mongoose.Schema.Types.ObjectId,
+    ref : 'Merchant'
+  },
   // Keep category for backward compatibility (will be populated from first category in categories array)
   category: {
     type: mongoose.Schema.Types.ObjectId,
@@ -78,6 +82,9 @@ const productSchema = new mongoose.Schema({
   isAvailable: {
     type: Boolean,
     default: true
+  },
+  deposit:{
+    type : Number
   },
   isFeatured: {
     type: Boolean,

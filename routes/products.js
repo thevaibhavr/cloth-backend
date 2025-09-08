@@ -66,6 +66,7 @@ router.get('/', optionalAuth, async (req, res) => {
     const products = await Product.find(filter)
       .populate('category', 'name slug')
       .populate('categories', 'name slug')
+      .populate('Owner', 'name mobilenumber address')
       .sort(sortOptions)
       .limit(limit * 1)
       .skip((page - 1) * limit)
@@ -111,7 +112,8 @@ router.get('/slug/:slug', optionalAuth, async (req, res) => {
       slug: req.params.slug,
       isAvailable: true 
     }).populate('category', 'name slug')
-     .populate('categories', 'name slug');
+     .populate('categories', 'name slug')
+     .populate('Owner', 'name mobilenumber address');
     
     if (!product) {
       return res.status(404).json({
@@ -158,6 +160,7 @@ router.get('/category/:categoryId', optionalAuth, async (req, res) => {
     })
       .populate('category', 'name slug')
       .populate('categories', 'name slug')
+      .populate('Owner', 'name mobilenumber address')
       .sort(sortOptions)
       .limit(limit * 1)
       .skip((page - 1) * limit)
@@ -196,7 +199,8 @@ router.get('/:id', optionalAuth, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
       .populate('category', 'name slug')
-      .populate('categories', 'name slug');
+      .populate('categories', 'name slug')
+      .populate('Owner', 'name mobilenumber address');
     
     if (!product) {
       return res.status(404).json({
@@ -242,6 +246,8 @@ router.post('/', protect, admin, [
   body('images').isArray({ min: 1 }).withMessage('At least one image is required'),
   body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
   body('originalPrice').isFloat({ min: 0 }).withMessage('Original price must be a positive number'),
+  body('deposit').optional().isFloat({ min: 0 }).withMessage('Deposit must be a positive number'),
+  body('Owner').optional().isMongoId().withMessage('Valid merchant ID is required'),
   body('sizes').isArray({ min: 1 }).withMessage('At least one size is required'),
   body('sizes.*.size').isIn(['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size']).withMessage('Valid size is required'),
   body('sizes.*.isAvailable').isBoolean().withMessage('Size availability must be boolean'),
@@ -272,6 +278,7 @@ router.post('/', protect, admin, [
       images,
       price,
       originalPrice,
+      deposit,
       sizes,
       color,
       rentalDuration,
@@ -324,6 +331,7 @@ router.post('/', protect, admin, [
       images: uploadedImages,
       price,
       originalPrice,
+      deposit,
       sizes,
       color,
       rentalDuration,
@@ -340,7 +348,8 @@ router.post('/', protect, admin, [
 
     const populatedProduct = await Product.findById(product._id)
       .populate('category', 'name slug')
-      .populate('categories', 'name slug');
+      .populate('categories', 'name slug')
+      .populate('Owner', 'name mobilenumber address');
 
     res.status(201).json({
       success: true,
@@ -383,6 +392,8 @@ router.put('/:id', protect, admin, [
   body('images').optional().isArray({ min: 1 }).withMessage('At least one image is required'),
   body('price').optional().isFloat({ min: 0 }).withMessage('Price must be a positive number'),
   body('originalPrice').optional().isFloat({ min: 0 }).withMessage('Original price must be a positive number'),
+  body('deposit').optional().isFloat({ min: 0 }).withMessage('Deposit must be a positive number'),
+  body('Owner').optional().isMongoId().withMessage('Valid merchant ID is required'),
   body('sizes').optional().isArray({ min: 1 }).withMessage('At least one size is required'),
   body('sizes.*.size').optional().isIn(['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size']).withMessage('Valid size is required'),
   body('sizes.*.isAvailable').optional().isBoolean().withMessage('Size availability must be boolean'),
@@ -455,7 +466,8 @@ router.put('/:id', protect, admin, [
       req.body,
       { new: true, runValidators: true }
     ).populate('category', 'name slug')
-     .populate('categories', 'name slug');
+     .populate('categories', 'name slug')
+     .populate('Owner', 'name mobilenumber address');
 
     res.json({
       success: true,
