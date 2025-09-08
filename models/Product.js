@@ -82,7 +82,7 @@ const productSchema = new mongoose.Schema({
   isAvailable: {
     type: Boolean,
     default: true
-  },
+  },  
   deposit:{
     type : Number
   },
