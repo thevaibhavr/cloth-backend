@@ -30,10 +30,34 @@ router.get('/', optionalAuth, async (req, res) => {
     const filter = { isAvailable: true };
     
     if (category) {
+      // First, try to find the category by slug to get the ID
+      let categoryId = category;
+      
+      // Check if category is a slug (not a MongoDB ObjectId)
+      if (!category.match(/^[0-9a-fA-F]{24}$/)) {
+        const categoryDoc = await Category.findOne({ slug: category, isActive: true });
+        if (categoryDoc) {
+          categoryId = categoryDoc._id;
+        } else {
+          // If category slug not found, return empty results
+          return res.json({
+            success: true,
+            data: {
+              products: [],
+              totalPages: 0,
+              currentPage: parseInt(page),
+              total: 0,
+              hasNextPage: false,
+              hasPrevPage: false
+            }
+          });
+        }
+      }
+      
       // Support both single category and multiple categories
       filter.$or = [
-        { category: category },
-        { categories: category }
+        { category: categoryId },
+        { categories: categoryId }
       ];
     }
     
