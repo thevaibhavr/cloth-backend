@@ -54,11 +54,8 @@ router.get('/', optionalAuth, async (req, res) => {
         }
       }
       
-      // Support both single category and multiple categories
-      filter.$or = [
-        { category: categoryId },
-        { categories: categoryId }
-      ];
+      // Filter by categories array only (category field is for backward compatibility)
+      filter.categories = categoryId;
     }
     
     if (search) {
@@ -176,10 +173,7 @@ router.get('/category/:categoryId', optionalAuth, async (req, res) => {
     sortOptions[sort] = order === 'desc' ? -1 : 1;
 
     const products = await Product.find({ 
-      $or: [
-        { category: req.params.categoryId },
-        { categories: req.params.categoryId }
-      ],
+      categories: req.params.categoryId,
       isAvailable: true 
     })
       .populate('category', 'name slug')
@@ -191,10 +185,7 @@ router.get('/category/:categoryId', optionalAuth, async (req, res) => {
       .exec();
 
     const total = await Product.countDocuments({ 
-      $or: [
-        { category: req.params.categoryId },
-        { categories: req.params.categoryId }
-      ],
+      categories: req.params.categoryId,
       isAvailable: true 
     });
 
