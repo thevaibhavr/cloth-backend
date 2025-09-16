@@ -28,7 +28,7 @@ const corsOrigins = process.env.CORS_ORIGIN
       'https://saloni-cloths.vercel.app',
       'https://rent-the-moment-admin.vercel.app',
       'https://rent-moment-frontend.vercel.app',
-      'https://luxe-rent-couture.vercel.app'
+      'https://new-lux-dun.vercel.app'
     ];
 
 app.use(cors({
