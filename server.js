@@ -23,14 +23,35 @@ const corsOrigins = process.env.CORS_ORIGIN
   : [
       'http://localhost:3000', 
       'http://localhost:3001',
+      'http://localhost:5173',  // Vite dev server
+      'http://localhost:8080',  // Your frontend server
       'https://saloni-cloths.vercel.app',
       'https://rent-the-moment-admin.vercel.app',
-      'https://rent-moment-frontend.vercel.app'
+      'https://rent-moment-frontend.vercel.app',
+      'https://luxe-rent-couture.vercel.app'
     ];
 
 app.use(cors({
-  origin: corsOrigins,
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list
+    if (corsOrigins.indexOf(origin) !== -1) {
+      return callback(null, true);
+    }
+    
+    // For development, allow any localhost origin
+    if (process.env.NODE_ENV !== 'production' && origin.includes('localhost')) {
+      return callback(null, true);
+    }
+    
+    const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+    return callback(new Error(msg), false);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
  
 // Rate limiting disabled - unlimited requests allowed
