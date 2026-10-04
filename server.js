@@ -2,9 +2,16 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
+const dns = require('node:dns');
 require('dotenv').config();
+
+const dnsServers = (process.env.MONGODB_DNS_SERVERS || '')
+  .split(',')
+  .map(server => server.trim())
+  .filter(Boolean);
+if (dnsServers.length > 0) dns.setServers(dnsServers);
  
-const app = express();  
+const app = express();    
 
 // Import routes
 const authRoutes = require('./routes/auth'); 
@@ -60,9 +67,9 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://vaibhavrathoremaaa:jVftYxEo3GEUmRTq@cloth.v6bacze.mongodb.net/clothing_rental') .then(() => console.log('Connected to MongoDB'))
+mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://vaibhavrathoremaaa:jVftYxEo3GEUmRTq@cloth.v6bacze.mongodb.net/cloths_rental') .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('MongoDB connection error:', err));
-
+// mongodb+srv://vaibhavrathoremaaa:jVftYxEo3GEUmRTq@cloth.v6bacze.mongodb.net/cloths_rental
 // Routes
 app.use('/api/auth', authRoutes); 
 app.use('/api/categories', categoryRoutes);

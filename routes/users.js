@@ -134,7 +134,15 @@ router.put('/:id', protect, admin, [
   body('email').optional().isEmail().normalizeEmail().withMessage('Please provide a valid email'),
   body('role').optional().isIn(['user', 'admin']).withMessage('Valid role is required'),
   body('phone').optional().trim(),
+  body('gender').optional().isIn(['Girl', 'Boy', 'Prefer not to say']).withMessage('Please select a valid gender'),
+  body('city').optional().trim(),
+  body('cityId').optional().trim(),
+  body('avatar').optional().trim(),
+  body('address.building').optional().trim(),
+  body('address.houseNumber').optional().trim(),
   body('address.street').optional().trim(),
+  body('address.area').optional().trim(),
+  body('address.landmark').optional().trim(),
   body('address.city').optional().trim(),
   body('address.state').optional().trim(),
   body('address.zipCode').optional().trim(),
@@ -172,7 +180,7 @@ router.put('/:id', protect, admin, [
     }
 
     // Update fields
-    const updateFields = ['name', 'email', 'role', 'phone', 'address', 'isActive', 'emailVerified'];
+    const updateFields = ['name', 'email', 'role', 'phone', 'gender', 'city', 'cityId', 'avatar', 'address', 'isActive', 'emailVerified'];
     updateFields.forEach(field => {
       if (req.body[field] !== undefined) {
         user[field] = req.body[field];

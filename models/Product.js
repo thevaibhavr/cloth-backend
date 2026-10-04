@@ -168,7 +168,4 @@ productSchema.pre('save', async function(next) {
 // Index for search functionality
 productSchema.index({ name: 'text', description: 'text', tags: 'text' });
 
-// Unique index for slug
-productSchema.index({ slug: 1 }, { unique: true, sparse: true });
-
 module.exports = mongoose.model('Product', productSchema); 

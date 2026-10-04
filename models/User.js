@@ -33,8 +33,25 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  gender: {
+    type: String,
+    enum: ['Girl', 'Boy', 'Prefer not to say'],
+    default: 'Prefer not to say'
+  },
+  city: {
+    type: String,
+    trim: true
+  },
+  cityId: {
+    type: String,
+    trim: true
+  },
   address: {
+    building: String,
+    houseNumber: String,
     street: String,
+    area: String,
+    landmark: String,
     city: String,
     state: String,
     zipCode: String,

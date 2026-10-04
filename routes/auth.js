@@ -21,7 +21,15 @@ router.post('/register', [
   body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('phone').optional().trim(),
+  body('gender').optional().isIn(['Girl', 'Boy', 'Prefer not to say']).withMessage('Please select a valid gender'),
+  body('city').optional().trim(),
+  body('cityId').optional().trim(),
+  body('avatar').optional().trim(),
+  body('address.building').optional().trim(),
+  body('address.houseNumber').optional().trim(),
   body('address.street').optional().trim(),
+  body('address.area').optional().trim(),
+  body('address.landmark').optional().trim(),
   body('address.city').optional().trim(),
   body('address.state').optional().trim(),
   body('address.zipCode').optional().trim(),
@@ -37,7 +45,7 @@ router.post('/register', [
       });
     }
 
-    const { name, email, password, phone, address } = req.body;
+    const { name, email, password, phone, gender, city, cityId, avatar, address } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -54,6 +62,10 @@ router.post('/register', [
       email,
       password,
       phone,
+      gender,
+      city,
+      cityId,
+      avatar,
       address
     });
 
@@ -72,7 +84,11 @@ router.post('/register', [
           email: user.email,
           role: user.role,
           phone: user.phone,
-          address: user.address
+          gender: user.gender,
+          city: user.city,
+          cityId: user.cityId,
+          address: user.address,
+          avatar: user.avatar
         },
         token
       }
@@ -144,6 +160,9 @@ router.post('/login', [
           email: user.email,
           role: user.role,
           phone: user.phone,
+          gender: user.gender,
+          city: user.city,
+          cityId: user.cityId,
           address: user.address,
           avatar: user.avatar
         },
@@ -175,6 +194,9 @@ router.get('/me', protect, async (req, res) => {
           email: user.email,
           role: user.role,
           phone: user.phone,
+          gender: user.gender,
+          city: user.city,
+          cityId: user.cityId,
           address: user.address,
           avatar: user.avatar,
           emailVerified: user.emailVerified,
@@ -197,7 +219,15 @@ router.get('/me', protect, async (req, res) => {
 router.put('/profile', protect, [
   body('name').optional().trim().isLength({ min: 2, max: 50 }).withMessage('Name must be between 2 and 50 characters'),
   body('phone').optional().trim(),
+  body('gender').optional().isIn(['Girl', 'Boy', 'Prefer not to say']).withMessage('Please select a valid gender'),
+  body('city').optional().trim(),
+  body('cityId').optional().trim(),
+  body('avatar').optional().trim(),
+  body('address.building').optional().trim(),
+  body('address.houseNumber').optional().trim(),
   body('address.street').optional().trim(),
+  body('address.area').optional().trim(),
+  body('address.landmark').optional().trim(),
   body('address.city').optional().trim(),
   body('address.state').optional().trim(),
   body('address.zipCode').optional().trim(),
@@ -213,7 +243,7 @@ router.put('/profile', protect, [
       });
     }
 
-    const { name, phone, address } = req.body;
+    const { name, phone, gender, city, cityId, avatar, address } = req.body;
 
     const user = await User.findById(req.user.id);
     if (!user) {
@@ -226,7 +256,14 @@ router.put('/profile', protect, [
     // Update fields
     if (name) user.name = name;
     if (phone) user.phone = phone;
-    if (address) user.address = address;
+    if (gender) user.gender = gender;
+    if (city) user.city = city;
+    if (cityId) user.cityId = cityId;
+    if (avatar !== undefined) user.avatar = avatar;
+    if (address) {
+      const currentAddress = user.address && typeof user.address.toObject === 'function' ? user.address.toObject() : (user.address || {});
+      user.address = { ...currentAddress, ...address };
+    }
 
     await user.save();
 
@@ -240,6 +277,9 @@ router.put('/profile', protect, [
           email: user.email,
           role: user.role,
           phone: user.phone,
+          gender: user.gender,
+          city: user.city,
+          cityId: user.cityId,
           address: user.address,
           avatar: user.avatar
         }
