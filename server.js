@@ -16,6 +16,7 @@ const app = express();
 // Import routes
 const authRoutes = require('./routes/auth'); 
 const categoryRoutes = require('./routes/categories');
+const occasionRoutes = require('./routes/occasions');
 const productRoutes = require('./routes/products'); 
 const orderRoutes = require('./routes/orders');
 const userRoutes = require('./routes/users');
@@ -73,6 +74,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://vaibhavrathoremaaa:jV
 // Routes
 app.use('/api/auth', authRoutes); 
 app.use('/api/categories', categoryRoutes);
+app.use('/api/occasions', occasionRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);

@@ -26,6 +26,14 @@ const productSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category'
   },
+  occasions: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Occasion'
+  }],
+  occasion: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Occasion'
+  },
   images: [{
     type: String,
     required: [true, 'Please provide at least one product image']
@@ -131,6 +139,11 @@ productSchema.pre('save', async function(next) {
   if (this.categories && this.categories.length > 0) {
     this.category = this.categories[0];
   }
+
+  if (this.occasions && this.occasions.length > 0) {
+    this.occasion = this.occasions[0];
+  }
+
   next();
 });
 

@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
+const Occasion = require('../models/Occasion');
 const { protect, admin, optionalAuth } = require('../middleware/auth');
 const { uploadMultipleImages, deleteImage } = require('../config/cloudinary');
 
@@ -23,7 +24,8 @@ router.get('/', optionalAuth, async (req, res) => {
       color,
       sort = 'createdAt',
       order = 'desc',
-      featured
+      featured,
+      occasion
     } = req.query;
 
     // Build filter object
@@ -80,6 +82,29 @@ router.get('/', optionalAuth, async (req, res) => {
       filter.isFeatured = true;
     }
 
+    if (occasion) {
+      let occasionId = occasion;
+      if (!occasion.match(/^[0-9a-fA-F]{24}$/)) {
+        const occasionDoc = await Occasion.findOne({ slug: occasion, status: 'active' });
+        if (occasionDoc) {
+          occasionId = occasionDoc._id;
+        } else {
+          return res.json({
+            success: true,
+            data: {
+              products: [],
+              totalPages: 0,
+              currentPage: parseInt(page),
+              total: 0,
+              hasNextPage: false,
+              hasPrevPage: false
+            }
+          });
+        }
+      }
+      filter.occasions = occasionId;
+    }
+
     // Build sort object
     const sortOptions = {};
     sortOptions[sort] = order === 'desc' ? -1 : 1;
@@ -87,6 +112,7 @@ router.get('/', optionalAuth, async (req, res) => {
     const products = await Product.find(filter)
       .populate('category', 'name slug')
       .populate('categories', 'name slug')
+      .populate('occasions', 'name slug status')
       .populate('Owner', 'name mobilenumber address')
       .sort(sortOptions)
       .limit(limit * 1)
@@ -134,6 +160,7 @@ router.get('/slug/:slug', optionalAuth, async (req, res) => {
       isAvailable: true 
     }).populate('category', 'name slug')
      .populate('categories', 'name slug')
+     .populate('occasions', 'name slug status')
      .populate('Owner', 'name mobilenumber address');
     
     if (!product) {
@@ -178,6 +205,7 @@ router.get('/category/:categoryId', optionalAuth, async (req, res) => {
     })
       .populate('category', 'name slug')
       .populate('categories', 'name slug')
+      .populate('occasions', 'name slug status')
       .populate('Owner', 'name mobilenumber address')
       .sort(sortOptions)
       .limit(limit * 1)
@@ -207,6 +235,52 @@ router.get('/category/:categoryId', optionalAuth, async (req, res) => {
   }
 });
 
+// @route   GET /api/products/occasion/:occasionId
+// @desc    Get products by occasion
+// @access  Public
+router.get('/occasion/:occasionId', optionalAuth, async (req, res) => {
+  try {
+    const { page = 1, limit = 12, sort = 'createdAt', order = 'desc' } = req.query;
+
+    const sortOptions = {};
+    sortOptions[sort] = order === 'desc' ? -1 : 1;
+
+    const products = await Product.find({
+      occasions: req.params.occasionId,
+      isAvailable: true
+    })
+      .populate('category', 'name slug')
+      .populate('categories', 'name slug')
+      .populate('occasions', 'name slug status')
+      .populate('Owner', 'name mobilenumber address')
+      .sort(sortOptions)
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .exec();
+
+    const total = await Product.countDocuments({
+      occasions: req.params.occasionId,
+      isAvailable: true
+    });
+
+    res.json({
+      success: true,
+      data: {
+        products,
+        totalPages: Math.ceil(total / limit),
+        currentPage: parseInt(page),
+        total
+      }
+    });
+  } catch (error) {
+    console.error('Get products by occasion error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching products'
+    });
+  }
+});
+
 // @route   GET /api/products/:id
 // @desc    Get single product
 // @access  Public
@@ -215,6 +289,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
     const product = await Product.findById(req.params.id)
       .populate('category', 'name slug')
       .populate('categories', 'name slug')
+      .populate('occasions', 'name slug status')
       .populate('Owner', 'name mobilenumber address');
     
     if (!product) {
@@ -258,6 +333,9 @@ router.post('/', protect, admin, [
   body('description').notEmpty().withMessage('Description is required'),
   body('categories').isArray({ min: 1 }).withMessage('At least one category is required'),
   body('categories.*').isMongoId().withMessage('Valid category ID is required'),
+  body('occasions').optional().isArray().withMessage('Occasions must be an array'),
+  body('occasions.*').optional().isMongoId().withMessage('Valid occasion ID is required'),
+  body('occasion').optional().isMongoId().withMessage('Valid occasion ID is required'),
   body('images').isArray({ min: 1 }).withMessage('At least one image is required'),
   body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
   body('originalPrice').isFloat({ min: 0 }).withMessage('Original price must be a positive number'),
@@ -290,6 +368,8 @@ router.post('/', protect, admin, [
       name,
       description,
       categories,
+      occasions,
+      occasion,
       images,
       price,
       originalPrice,
@@ -328,6 +408,17 @@ router.post('/', protect, admin, [
       }
     }
 
+    const filteredOccasions = (occasions || [occasion]).filter(Boolean);
+    for (const occasionId of filteredOccasions) {
+      const occasionExists = await Occasion.findById(occasionId);
+      if (!occasionExists) {
+        return res.status(400).json({
+          success: false,
+          message: `Occasion with ID ${occasionId} not found`
+        });
+      }
+    }
+
     // Upload images to Cloudinary
     const uploadedImages = [];
     for (const image of images) {
@@ -343,6 +434,8 @@ router.post('/', protect, admin, [
       name,
       description,
       categories: filteredCategories,
+      occasions: filteredOccasions,
+      occasion: filteredOccasions[0] || occasion || null,
       images: uploadedImages,
       price,
       originalPrice,
@@ -364,6 +457,7 @@ router.post('/', protect, admin, [
     const populatedProduct = await Product.findById(product._id)
       .populate('category', 'name slug')
       .populate('categories', 'name slug')
+      .populate('occasions', 'name slug status')
       .populate('Owner', 'name mobilenumber address');
 
     res.status(201).json({
@@ -404,6 +498,9 @@ router.put('/:id', protect, admin, [
   body('description').optional().notEmpty().withMessage('Description cannot be empty'),
   body('categories').optional().isArray({ min: 1 }).withMessage('At least one category is required'),
   body('categories.*').optional().isMongoId().withMessage('Valid category ID is required'),
+  body('occasions').optional().isArray().withMessage('Occasions must be an array'),
+  body('occasions.*').optional().isMongoId().withMessage('Valid occasion ID is required'),
+  body('occasion').optional().isMongoId().withMessage('Valid occasion ID is required'),
   body('images').optional().isArray({ min: 1 }).withMessage('At least one image is required'),
   body('price').optional().isFloat({ min: 0 }).withMessage('Price must be a positive number'),
   body('originalPrice').optional().isFloat({ min: 0 }).withMessage('Original price must be a positive number'),
@@ -461,6 +558,21 @@ router.put('/:id', protect, admin, [
       }
     }
 
+    if (req.body.occasions || req.body.occasion) {
+      const filteredOccasions = (req.body.occasions || [req.body.occasion]).filter(Boolean);
+      for (const occasionId of filteredOccasions) {
+        const occasionExists = await Occasion.findById(occasionId);
+        if (!occasionExists) {
+          return res.status(400).json({
+            success: false,
+            message: `Occasion with ID ${occasionId} not found`
+          });
+        }
+      }
+      req.body.occasions = filteredOccasions;
+      req.body.occasion = filteredOccasions[0] || null;
+    }
+
     // Handle image uploads if provided
     if (req.body.images) {
       const uploadedImages = [];
@@ -482,6 +594,7 @@ router.put('/:id', protect, admin, [
       { new: true, runValidators: true }
     ).populate('category', 'name slug')
      .populate('categories', 'name slug')
+     .populate('occasions', 'name slug status')
      .populate('Owner', 'name mobilenumber address');
 
     res.json({
