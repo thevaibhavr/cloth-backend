@@ -281,6 +281,39 @@ router.get('/occasion/:occasionId', optionalAuth, async (req, res) => {
   }
 });
 
+// @route   GET /api/products/highlighted
+// @desc    Get highlighted products for homepage sections
+// @access  Public
+router.get('/highlighted', async (req, res) => {
+  try {
+    const parsedLimit = Number.parseInt(req.query.limit, 10);
+    const limit = Number.isInteger(parsedLimit) && parsedLimit > 0 ? parsedLimit : 10;
+
+    const products = await Product.find({
+      isHighlighted: true,
+      isAvailable: true
+    })
+      .populate('category', 'name slug')
+      .populate('categories', 'name slug')
+      .populate('occasions', 'name slug status')
+      .populate('Owner', 'name mobilenumber address')
+      .sort({ highlightOrder: 1, createdAt: -1 })
+      .limit(limit)
+      .exec();
+
+    res.json({
+      success: true,
+      data: { products }
+    });
+  } catch (error) {
+    console.error('Get highlighted products error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching highlighted products'
+    });
+  }
+});
+
 // @route   GET /api/products/:id
 // @desc    Get single product
 // @access  Public
